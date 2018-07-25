@@ -1,6 +1,6 @@
-# %attach /cygdrive/d/math/TEMPrepth/sage-subspace/linalg-epk.py
+# %attach /cygdrive/d/math/TEMPrepth/sage-subspace/combinatorial_vector_tuple.py
 
-class ListOfVectors():
+class CombinatorialVectorTuple():
     r"""
     List of vectors in some given module (not necessarily a concrete
     vector space, but something that implements ``monomial_coefficients``
@@ -20,7 +20,7 @@ class ListOfVectors():
 
         sage: E = ExteriorAlgebra(QQ, ["x","y","z","w"])
         sage: x,y,z,w = E.gens()
-        sage: a = ListOfVectors(QQ, E, [x, y, z, w])
+        sage: a = CombinatorialVectorTuple(QQ, E, [x, y, z, w])
         sage: a
         List of vectors [x, y, z, w] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
@@ -66,7 +66,7 @@ class ListOfVectors():
 
         sage: E = ExteriorAlgebra(GF(2), ["x","y","z","w"])
         sage: x,y,z,w = E.gens()
-        sage: a = ListOfVectors(GF(2), E, [x, y, z, w])
+        sage: a = CombinatorialVectorTuple(GF(2), E, [x, y, z, w])
         sage: a
         List of vectors [x, y, z, w] in Finite Field of size 2-module
         The exterior algebra of rank 4 over Finite Field of size 2
@@ -113,7 +113,7 @@ class ListOfVectors():
 
     Echelon form vs. reduced echelon form::
 
-        sage: a = ListOfVectors(GF(2), E, [x+y,x,y])
+        sage: a = CombinatorialVectorTuple(GF(2), E, [x+y,x,y])
         sage: a.echelon_reduced()
         List of vectors [y, x]
         in Finite Field of size 2-module The exterior algebra of rank 4 over Finite Field of size 2
@@ -130,13 +130,13 @@ class ListOfVectors():
     
     def __init__(self, basering, module, xs):
         # Create a list of vectors.
-        # Syntax: ``ListOfVectors(R, M, xs)``, where
+        # Syntax: ``CombinatorialVectorTuple(R, M, xs)``, where
         # ``R`` is the base ring, ``M`` is the module
         # containing the vectors, and ``xs`` is the list
         # of the vectors.
         # NOTE: Make sure ``xs`` is never mutated. The
         # safe way is to use
-        # ``ListOfVectors(R, M, xs.copy())``.
+        # ``CombinatorialVectorTuple(R, M, xs.copy())``.
         # TODO: Should we use self.vectors = tuple(xs)?
         self.vectors = xs[:]
         self.basering = basering
@@ -210,7 +210,7 @@ class ListOfVectors():
                 # if the bisect module would allow for keys, then
                 # this would be easy to improve.
                 echeloned.sort(key=lambda x : max(x.monomial_coefficients().keys()), reverse=True)
-        res = ListOfVectors(self.basering, self.undermodule, echeloned)
+        res = CombinatorialVectorTuple(self.basering, self.undermodule, echeloned)
         res.echelon.set_cache(res)
         return res
 
@@ -252,7 +252,7 @@ class ListOfVectors():
                 insort(echeloned, (max(w.monomial_coefficients().keys()), w))
         # Now forget the i's in echeloned. This is probably not very
         # efficient.
-        res = ListOfVectors(self.basering, self.undermodule, [t for i, t in reversed(echeloned)])
+        res = CombinatorialVectorTuple(self.basering, self.undermodule, [t for i, t in reversed(echeloned)])
         res.echelon.set_cache(res)
         return res
 
@@ -275,7 +275,7 @@ class ListOfVectors():
                 if tleader[0] in wcoeffs:
                     w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
             ech[i] = w
-        res = ListOfVectors(self.basering, self.undermodule, ech)
+        res = CombinatorialVectorTuple(self.basering, self.undermodule, ech)
         res.echelon.set_cache(res)
         return res
 
@@ -459,7 +459,7 @@ class ListOfVectors():
         # This union spans the sum of the respective submodules.
         us = self.vectors[:]
         us.extend(anotherlist.list())
-        return ListOfVectors(self.basering, self.undermodule, us)
+        return CombinatorialVectorTuple(self.basering, self.undermodule, us)
     
     def intersection_blind(self, anotherlist):
         # Gives the intersection of the span of self with the span
@@ -475,14 +475,14 @@ class ListOfVectors():
         n = len(vs)
         m = len(ws)
         vsws = vs + ws
-        syzzies = ListOfVectors(R, M, vsws).syzygies()
+        syzzies = CombinatorialVectorTuple(R, M, vsws).syzygies()
         reslist = []
         for (k, syz) in syzzies.iteritems():
             # Throw the vs-part of syz away.
             k2 = k - n
             syz2 = syz[n:]
             reslist.append(ws[k2] - M.sum(syz2[i] * ws[i] for i in range(k2)))
-        return ListOfVectors(R, M, reslist)
+        return CombinatorialVectorTuple(R, M, reslist)
 
     def intersection(self, anotherlist):
         # Gives the intersection of the span of self with the span
@@ -507,7 +507,7 @@ class ListOfVectors():
         us = self.vectors
         vs = anotherlist.list()
         ws = [op(p, q) for p in us for q in vs]
-        return ListOfVectors(self.basering, self.undermodule, ws)
+        return CombinatorialVectorTuple(self.basering, self.undermodule, ws)
         
     def commutator(self, anotherlist, op=operator.mul):
         # Gives the list formed by pairwise commutators of vectors in
@@ -524,14 +524,14 @@ class ListOfVectors():
         us = self.vectors
         vs = anotherlist.list()
         ws = [op(p, q) - op(q, p) for p in us for q in vs]
-        return ListOfVectors(self.basering, self.undermodule, ws)
+        return CombinatorialVectorTuple(self.basering, self.undermodule, ws)
         
     def power(self, n):
         # Returns the n-th power of the list with respect to the
         # above-defined product function.
         # This assumes that multiplication is actual multiplication.
         if n == 0:
-            return ListOfVectors(self.basering, self.undermodule, [self.undermodule.one()])
+            return CombinatorialVectorTuple(self.basering, self.undermodule, [self.undermodule.one()])
         elif n == 1:
             return self
         else:
@@ -547,7 +547,7 @@ class ListOfVectors():
         # Returns the list of the images of the vectors under a morphism f.
         # The module in which they lie is the codomain of f.
         ys = [f(x) for x in self.vectors]
-        return ListOfVectors(self.basering, f.codomain(), ys)
+        return CombinatorialVectorTuple(self.basering, f.codomain(), ys)
 
     def kernel(self, f):
         # Returns a basis of the kernel of a morphism f (restricted
@@ -560,7 +560,7 @@ class ListOfVectors():
         ker = []
         for i, xs in syzzies.iteritems():
             ker.append(vects[i] - M.sum((c * vects[j] for (j, c) in enumerate(xs))))
-        return ListOfVectors(R, M, ker)
+        return CombinatorialVectorTuple(R, M, ker)
 
 def subalgcomp(A, U, n):
     # INPUT:
@@ -583,7 +583,7 @@ def subalgcomp(A, U, n):
     for i in range(l):
         A[i] = U[i]
     for i in range(l, n):
-        A[i] = ListOfVectors(BR, A, [])
+        A[i] = CombinatorialVectorTuple(BR, A, [])
     for i in range(n):
         for j in range(1,i+1):
             if i - j < l:
@@ -614,7 +614,7 @@ def gradedideal(A, U, V, n):
     for i in range(l):
         A[i] = V[i]
     for i in range(l, n):
-        A[i] = ListOfVectors(BR, A, [])
+        A[i] = CombinatorialVectorTuple(BR, A, [])
     for i in range(n):
         for j in range(1,i+1):
             A[i] = A[i].add(B[j-1].product(A[i-j]).add(A[i-j].product(B[j-1]))).echelon()
@@ -644,6 +644,6 @@ lacsubs = [xs for k in range(n+1) for xs in combinations(range(n), k) if is_lacu
 
 lacsubs
 
-Epk_span = ListOfVectors(QQ, QSn, [E(xs) for xs in lacsubs])
+Epk_span = CombinatorialVectorTuple(QQ, QSn, [E(xs) for xs in lacsubs])
 """
 
