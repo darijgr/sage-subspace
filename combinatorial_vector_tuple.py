@@ -27,7 +27,7 @@ class VectorTuple():
         sage: a
         List of vectors [x, y, z, w] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
-        sage: a.vectors
+        sage: a.list()
         [x, y, z, w]
         sage: a.dimension()
         4
@@ -64,6 +64,9 @@ class VectorTuple():
         True
         sage: aa.isequivalentto(aca)
         True
+        sage: aca.monicized()
+        List of vectors [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
+        The exterior algebra of rank 4 over Rational Field
 
     Now, we do the same over `GF(2)`::
 
@@ -73,7 +76,7 @@ class VectorTuple():
         sage: a
         List of vectors [x, y, z, w] in Finite Field of size 2-module
         The exterior algebra of rank 4 over Finite Field of size 2
-        sage: a.vectors
+        sage: a.list()
         [x, y, z, w]
         sage: a.dimension()
         4
@@ -131,46 +134,54 @@ class VectorTuple():
     TODO: Free algebra, e.g., check Dynkin idempotent.
     """
     
-    def __init__(self, xs, ambient):
+    def __init__(self, xs, ambient=None):
         # Create a list of vectors.
         # Syntax: ``VectorTuple(xs, ambient=M)``, where
         # ``R`` is the base ring, ``M`` is the module
         # containing the vectors, and ``xs`` is the list
         # of the vectors.
-        self.vectors = xs[:]
-        self.basering = ambient.base_ring()
-        self.ambient = ambient
+        # If ``ambient`` is not provided, then
+        # ``parent(xs[0])`` is being used as default.
+        self._vectors = xs[:]
+        if ambient is None:
+            ambient = parent(xs[0])
+            if not all(ambient.is_parent_of(x) for x in xs):
+                raise ValueError("ambient does not contain all the xs elements")
+        self._basering = ambient.base_ring()
+        self._ambient = ambient
         return object.__init__(self)
     
     def __repr__(self):
-        return "List of vectors " + str(self.vectors) + " in " + str(self.basering) + "-module " + str(self.ambient)
+        return "List of vectors " + str(self._vectors) + " in " + str(self._basering) + "-module " + str(self._ambient)
 
     def base_ring(self):
-        return self.basering
+        return self._basering
     
     def underlying_module(self):
-        return self.ambient
+        return self._ambient
     
     def list(self):
-        return self.vectors[:]
+        return self._vectors[:]
     
     def show(self):
         print('List of vectors in module:')
-        print self.ambient
+        print self._ambient
         print('over the base ring')
-        print self.basering
+        print self._basering
         print('The vectors are:')
-        for i in self.vectors: print i
+        for i in self._vectors: print i
     
     def reduction_blind(self, v):
-        # Computes the reduction of a vector v modulo self, under the
-        # assumption that self is in echelon form already.
-        # It is assumed that the module knows division by elements of
-        # the base ring and equality checking.
-        R = self.basering
+        r"""
+        This computes ``self.reduction(v)`` under the assumption
+        that ``self`` is already in echelon form.
+        It is assumed that the module knows division by elements of
+        the base ring and equality checking.
+        """
+        R = self._basering
         w = v
-        xs = self.vectors # the vectors in the list - in echelon form,
-                          # with highest terms strictly decreasing.
+        xs = self._vectors # the vectors in ``self`` in echelon form,
+                           # with highest terms strictly decreasing.
         for t in xs:
             wcoeffs = w.monomial_coefficients()
             tleader = max(t.monomial_coefficients().items())
@@ -179,20 +190,22 @@ class VectorTuple():
         return w
     
     @cached_method
-    def echelon(self):
-        # Returns an echelon form of self. This is a list of vectors
-        # which spans the same submodule as self, but has its
-        # sequence of highest terms strictly decreasing.
-        # It is assumed that the module knows division by elements of
-        # the base ring and equality checking.
-        R = self.basering
+    def echelon(self, reduced=True, monic=True):
+        r"""
+        Return an echelon form of ``self``. This is a list of vectors
+        which spans the same submodule as ``self``, but has its
+        sequence of highest terms strictly decreasing.
+        It is assumed that the module knows division by elements of
+        the base ring and equality checking.
+        """
+        R = self._basering
         echeloned = [] # The echeloned variable contains a list of
                        # vectors already brought into echelon form.
                        # This list will grow step by step until it
                        # spans the same submodule as self.
-        for v in self.vectors:
+        for v in self._vectors:
             w = v
-            # Now reduce v modulo echeloned:
+            # Now reduce v modulo the span of the vectors in echeloned:
             for t in echeloned:
                 wcoeffs = w.monomial_coefficients()
                 tleader = max(t.monomial_coefficients().items())
@@ -209,15 +222,16 @@ class VectorTuple():
                 # if the bisect module would allow for keys, then
                 # this would be easy to improve.
                 echeloned.sort(key=lambda x : max(x.monomial_coefficients().keys()), reverse=True)
-        res = VectorTuple(echeloned, ambient=self.ambient)
+        res = VectorTuple(echeloned, ambient=self._ambient)
         res.echelon.set_cache(res)
         return res
 
     def echelon2(self):
-        # Another way to get an echelon form. Possibly sometimes
-        # faster than echelon. It saves the result into the cache
-        # of echelon.
-        R = self.basering
+        r"""
+        Different implementation of :meth:`echelon`.
+        Returns the same result (or, rather, the same list of vectors).
+        """
+        R = self._basering
         from bisect import insort
         echeloned = [] # The echeloned variable contains a list of
                        # pairs (i, v), with i being a monomial and v
@@ -234,7 +248,7 @@ class VectorTuple():
                        # be sorted by increasing i, so the v's form a
                        # basis in row echelon form (whence the name
                        # "echelon").
-        for v in self.vectors:
+        for v in self._vectors:
             w = v
             # Now reduce v modulo the span of the vectors in echeloned:
             for i, t in reversed(echeloned):
@@ -251,19 +265,21 @@ class VectorTuple():
                 insort(echeloned, (max(w.monomial_coefficients().keys()), w))
         # Now forget the i's in echeloned. This is probably not very
         # efficient.
-        res = VectorTuple([t for i, t in reversed(echeloned)], ambient=self.ambient)
+        res = VectorTuple([t for i, t in reversed(echeloned)], ambient=self._ambient)
         res.echelon.set_cache(res)
         return res
 
     @cached_method
     def echelon_reduced(self):
-        # Returns the reduced echelon form of self. This is an
-        # echelon form of self such that the highest term of
-        # any of its vectors occurs in no other of its vectors.
-        # It is assumed that the module knows division by elements of
-        # the base ring and equality checking.
-        R = self.basering
-        ech = self.echelon().vectors[:]
+        r"""
+        Return the reduced echelon form of ``self``. This is an
+        echelon form of ``self`` such that the highest term of
+        any of its vectors occurs in no other of its vectors.
+        It is assumed that the module knows division by elements of
+        the base ring and equality checking.
+        """
+        R = self._basering
+        ech = self.echelon()._vectors[:]
         k = len(ech)
         for i in range(k-1, -1, -1):
             w = ech[i]
@@ -274,17 +290,33 @@ class VectorTuple():
                 if tleader[0] in wcoeffs:
                     w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
             ech[i] = w
-        res = VectorTuple(ech, ambient=self.ambient)
+        res = VectorTuple(ech, ambient=self._ambient)
         res.echelon.set_cache(res)
+        res.echelon_reduced.set_cache(res)
         return res
+
+    def monicized(self):
+        r"""
+        Return the vector list obtained from ``self`` by
+        dividing each nonzero vector in ``self`` by its leading
+        coefficient.
+        """
+        M = self._ambient
+        R = self._basering
+        mon = [(x if x == 0
+                else ~(R(max(x.monomial_coefficients().items())[1])) * x)
+               for x in self._vectors]
+        return VectorTuple(mon, ambient=M)
 
     @cached_method
     def echelon_reducer(self):
-        # Return the matrix whose i-th row contains the coefficients
-        # of the i-th vector of self.echelon() with respect to the
-        # spanning set self.
-        # The matrix is returned as a list of lists (the inner lists
-        # being its rows).
+        r"""
+        Return the matrix whose `i`-th row contains the coefficients
+        of the `i`-th vector of ``self.echelon()`` with respect to the
+        spanning set ``self``.
+        The matrix is returned as a list of lists (the inner lists
+        being its rows).
+        """
         from itertools import izip
         echeloned = [] # The echeloned variable contains a list of
                        # pairs (v, hs). The v components are vectors
@@ -294,11 +326,11 @@ class VectorTuple():
                        # This list will grow step by step until its
                        # v components span the same submodule as
                        # self.
-        R = self.basering
+        R = self._basering
         zero = R.zero()
         one = R.one()
-        l = len(self.vectors)
-        for (i, v) in enumerate(self.vectors):
+        l = len(self._vectors)
+        for (i, v) in enumerate(self._vectors):
             w = v
             whs = [zero] * l
             whs[i] = one
@@ -327,11 +359,13 @@ class VectorTuple():
 
     @cached_method
     def syzygies(self):
-        # Returns a dictionary whose items `i: xs` stand for the
-        # syzygies of self. More specifically, an item `i: xs` means that
-        # the `i`-th vector in self equals the linear combination
-        # of the first `i-1` vectors with coefficients taken from
-        # `xs`. (Note that `xs` is a length-`i-1` list.)
+        r"""
+        Return a dictionary whose items `i: xs` stand for the
+        syzygies of ``self``. More specifically, an item `i: xs` means that
+        the `i`-th vector in ``self`` equals the linear combination
+        of the first `i-1` vectors with coefficients taken from
+        `xs`. (Note that `xs` is a length-`i-1` list.)
+        """
         from itertools import izip
         echeloned = [] # The echeloned variable contains a list of
                        # pairs (v, hs). The v components are vectors
@@ -342,11 +376,11 @@ class VectorTuple():
                        # v components span the same submodule as
                        # self.
         syzzies = {}
-        l = len(self.vectors)
-        R = self.basering
+        l = len(self._vectors)
+        R = self._basering
         zero = R.zero()
         one = R.one()
-        for (i, v) in enumerate(self.vectors):
+        for (i, v) in enumerate(self._vectors):
             w = v
             whs = [zero] * l
             whs[i] = one
@@ -376,33 +410,38 @@ class VectorTuple():
         return syzzies
 
     def coefficients(self, v):
-        # Computes a list [a_1, a_2, ..., a_k] of coefficients
-        # such that v = a_1 v_1 + a_2 v_2 + ... + a_k v_k, where
-        # self == [v_1, v_2, ..., v_k].
-        # Return None (TODO: or raise ValueError)
-        # if there is no such list.
+        r"""
+        Given a vector `v \in V`, return a list
+        `[a_0, a_1, \ldots, a_{n-1}]` of scalars in `R`
+        such that
+        `v = a_0 v_0 + a_1 v_1 + \cdots + a_{n-1} v_{n-1}`
+        if such a list exists; otherwise return ``None``.
+        
+        This list may not be unique; it is, however, computed
+        deterministically from ``self``.
+        """
         ech = self.echelon()
-        l = len(ech.vectors)
-        ring = self.basering
+        l = len(ech._vectors)
+        ring = self._basering
         blinds = ech.coefficients_blind(v)
-        k = len(self.vectors)
+        k = len(self._vectors)
         red = self.echelon_reducer()
         res = [ring.sum((blinds[i] * red[i][j]
                          for i in range(l)))
-                for j in range(k)]
-        if self.ambient.sum(res[i] * self.vectors[i] for i in range(len(self.vectors))) == v:
+               for j in range(k)]
+        if self._ambient.sum(res[i] * self._vectors[i] for i in range(len(self._vectors))) == v:
             return res
 
     def coefficients_blind(self, v):
-        # Computes a list [a_1, a_2, ..., a_k] of coefficients
-        # such that v = a_1 v_1 + a_2 v_2 + ... + a_k v_k, where
-        # self == [v_1, v_2, ..., v_k], under the assumption that
-        # self is in echelon form, and that v is a linear
-        # combination of the vectors of self.
-        R = self.basering
+        r"""
+        Compute ``self.coefficients(v)``, under the assumption
+        that ``self`` is in echelon form, and that ``v`` is a
+        linear combination of the vectors of ``self``.
+        """
+        R = self._basering
         w = v
-        coeffs = [R.zero()] * len(self.vectors)
-        for (i, t) in enumerate(self.vectors):
+        coeffs = [R.zero()] * len(self._vectors)
+        for (i, t) in enumerate(self._vectors):
             wcoeffs = w.monomial_coefficients()
             tleader = max(t.monomial_coefficients().items())
             if tleader[0] in wcoeffs:
@@ -456,9 +495,9 @@ class VectorTuple():
         # Gives the disjoint union of self with anotherlist (another list
         # of vectors, which of course should be in the same module).
         # This union spans the sum of the respective submodules.
-        us = self.vectors[:]
+        us = self._vectors[:]
         us.extend(anotherlist.list())
-        return VectorTuple(us, ambient=self.ambient)
+        return VectorTuple(us, ambient=self._ambient)
     
     def intersection_blind(self, anotherlist):
         # Gives the intersection of the span of self with the span
@@ -467,9 +506,9 @@ class VectorTuple():
         # vectors.
         # This assumes that self and anotherlist are in echelon form
         # already.
-        vs = self.vectors
+        vs = self._vectors
         ws = anotherlist.list()
-        M = self.ambient
+        M = self._ambient
         n = len(vs)
         vsws = vs + ws
         syzzies = VectorTuple(vsws, ambient=M).syzygies()
@@ -501,10 +540,10 @@ class VectorTuple():
         # method spans the product of the respective submodules
         # (in the sense in which, e. g., the product of ideals is
         # defined).
-        us = self.vectors
+        us = self._vectors
         vs = anotherlist.list()
         ws = [op(p, q) for p in us for q in vs]
-        return VectorTuple(ws, ambient=self.ambient)
+        return VectorTuple(ws, ambient=self._ambient)
         
     def commutator(self, anotherlist, op=operator.mul):
         # Gives the list formed by pairwise commutators of vectors in
@@ -518,17 +557,17 @@ class VectorTuple():
         # assumes that `M` is an algebra.)
         # If ``op`` is bilinear, then the list returned by this
         # method spans the commutator of the respective submodules.
-        us = self.vectors
+        us = self._vectors
         vs = anotherlist.list()
         ws = [op(p, q) - op(q, p) for p in us for q in vs]
-        return VectorTuple(ws, ambient=self.ambient)
+        return VectorTuple(ws, ambient=self._ambient)
         
     def power(self, n):
         # Returns the n-th power of the list with respect to the
         # above-defined product function.
         # This assumes that multiplication is actual multiplication.
         if n == 0:
-            return VectorTuple([self.ambient.one()], ambient=self.ambient)
+            return VectorTuple([self._ambient.one()], ambient=self._ambient)
         elif n == 1:
             return self
         else:
@@ -543,7 +582,7 @@ class VectorTuple():
     def image(self, f):
         # Returns the list of the images of the vectors under a morphism f.
         # The module in which they lie is the codomain of f.
-        ys = [f(x) for x in self.vectors]
+        ys = [f(x) for x in self._vectors]
         return VectorTuple(ys, ambient=f.codomain())
 
     def kernel(self, f):
@@ -551,8 +590,8 @@ class VectorTuple():
         # to the span of self).
         img = self.image(f)
         syzzies = img.syzygies()
-        vects = self.vectors
-        M = self.ambient
+        vects = self._vectors
+        M = self._ambient
         ker = []
         for i, xs in syzzies.iteritems():
             ker.append(vects[i] - M.sum((c * vects[j] for (j, c) in enumerate(xs))))
