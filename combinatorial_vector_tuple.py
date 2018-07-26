@@ -218,6 +218,8 @@ class VectorTuple():
         ([0, -1, 1], 0)
         sage: xs.quo_rem(b * (b+c+d))
         ([0, -1/2, 1/2], 1/2*F['b']^2)
+        sage: xs.echelon().quo_rem(b * (b+c+d))
+        ([0, 0, 1/2], 1/2*F['b']^2)
 
     A few other methods::
 
@@ -230,7 +232,97 @@ class VectorTuple():
         sage: xs.echelon().monicized().list()
         [F['c'], F['b'], F['a']]
 
-    TODO: Polynomial ring, through free abelian monoid.
+        sage: ys = VectorTuple([a+b, a+c, a+d, b+c, b+d, c+d])
+        sage: ys.syzygies()
+        {4: [0, -1, 1, 1], 5: [-1, 0, 1, 1, 0]}
+        sage: ys.echelon().list()
+        [F['a'] + F['d'], F['a'] + F['c'], F['a'] + F['b'], -2*F['a']]
+        sage: ys.echelon_reducer()
+        [[0, 0, 1, 0, 0, 0],
+         [0, 1, 0, 0, 0, 0],
+         [1, 0, 0, 0, 0, 0],
+         [-1, -1, 0, 1, 0, 0]]
+
+        sage: zs = VectorTuple([a+b, c+d, b+c, d+a, a+c, b+d])
+        sage: zs.syzygies()
+        {3: [1, 1, -1], 5: [1, 1, 0, 0, -1]}
+        sage: ys.zip(zs)
+        Vector tuple
+        [2*F['a'] + 2*F['b'], F['a'] + 2*F['c'] + F['d'],
+         F['a'] + F['b'] + F['c'] + F['d'],
+         F['a'] + F['b'] + F['c'] + F['d'],
+         F['a'] + F['b'] + F['c'] + F['d'],
+         F['b'] + F['c'] + 2*F['d']]
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: ys.zip(zs, op=lambda a, b: a-b)
+        Vector tuple
+        [0, F['a'] - F['d'], F['a'] - F['b'] - F['c'] + F['d'],
+         -F['a'] + F['b'] + F['c'] - F['d'],
+         -F['a'] + F['b'] - F['c'] + F['d'], -F['b'] + F['c']]
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+
+        sage: x1s = VectorTuple([a, b])
+        sage: x2s = VectorTuple([c, d])
+        sage: x1s.product(x2s)
+        Vector tuple
+        [F['a']*F['c'], F['a']*F['d'], F['b']*F['c'], F['b']*F['d']]
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: x1s.product(x2s, op=lambda a, b: a*b-b*a)
+        Vector tuple [0, 0, 0, 0] in Rational Field-module Algebra
+        of Free abelian monoid indexed by {'a', 'b', 'c', 'd'} over
+        Rational Field
+
+    Another example of an ambient module is the group algebra
+    of a symmetric group.
+    For example, let us construct the group algebra ``QS4``
+    of the symmetric group `S_4`::
+
+        sage: QS4 = SymmetricGroupAlgebra(QQ, 4); QS4
+        Symmetric group algebra of order 4 over Rational Field
+
+    For any subset `I` of `\{1,2,3\}`, we let `D(I)` be the
+    sum (in ``QS4``) of all permutations whose descent set
+    is `I`::
+
+        sage: def D(I):
+        ....:     return QS4.sum(QS4(w) for w in Permutations(4)
+        ....:                    if w.descents() == sorted(I))
+        sage: D([1,3])
+        [2, 1, 4, 3] + [3, 1, 4, 2] + [3, 2, 4, 1] + [4, 1, 3, 2] + [4, 2, 3, 1]
+
+    Let `D_4` be the span of the `D(I)` with `I` ranging
+    over all subsets of `\{1,2,3\}`::
+
+        sage: D_4 = VectorTuple([D(I) for I in Subsets(range(1,4))],
+        ....:                   ambient=QS4)
+        sage: D_4
+        Vector tuple
+        [[1, 2, 3, 4],
+         [2, 1, 3, 4] + [3, 1, 2, 4] + [4, 1, 2, 3],
+         [1, 3, 2, 4] + [1, 4, 2, 3] + [2, 3, 1, 4] + [2, 4, 1, 3] + [3, 4, 1, 2],
+         [1, 2, 4, 3] + [1, 3, 4, 2] + [2, 3, 4, 1],
+         [3, 2, 1, 4] + [4, 2, 1, 3] + [4, 3, 1, 2],
+         [2, 1, 4, 3] + [3, 1, 4, 2] + [3, 2, 4, 1] + [4, 1, 3, 2] + [4, 2, 3, 1],
+         [1, 4, 3, 2] + [2, 4, 3, 1] + [3, 4, 2, 1], [4, 3, 2, 1]]
+        in Rational Field-module Symmetric group algebra of
+        order 4 over Rational Field
+
+    A result of Solomon shows that `D_4` is a subalgebra of
+    ``QS4`` (the so-called *descent algebra* of `S_4`). We
+    can check this by showing that the products of elements
+    of `D_4` belong to `D_4`::
+
+        sage: D_4.product(D_4).span_contains_as_subset(D_4)
+        True
+
+    We can just as easily expand specific products of elements
+    of `D_4` in `D_4`::
+
+        sage: D_4.coefficients(D([1]) * D([1]))
+        [1, 0, 1, 0, 1, 0, 0, 0]
 
     TODO: Symmetric group algebra.
 
@@ -250,6 +342,7 @@ class VectorTuple():
         """
         self._vectors = xs[:]
         if ambient is None:
+            from sage.structure.element import parent
             ambient = parent(xs[0])
             if not all(ambient.is_parent_of(x) for x in xs):
                 raise ValueError("ambient does not contain all the xs elements")
@@ -756,7 +849,12 @@ class VectorTuple():
         (The default value of ``op`` is addition, and the
         default value of ``ambient`` is ``self.ambient()``.)
         """
-        raise NotImplementedError # TODO
+        us = self._vectors
+        vs = ws._vectors
+        if ambient is None:
+            ambient = self._ambient
+        return VectorTuple([op(a, b) for (a, b) in zip(us, vs)],
+                           ambient=ambient)
 
     def span_intersection_blind(self, anotherlist):
         r"""
