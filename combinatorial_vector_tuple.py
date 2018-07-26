@@ -1,5 +1,8 @@
 # %attach /cygdrive/d/math/TEMPrepth/sage-subspace/combinatorial_vector_tuple.py
 
+from sage.misc.cachefunc import cached_method
+import operator
+
 class VectorTuple():
     r"""
     List of vectors in some given module (not necessarily a concrete
