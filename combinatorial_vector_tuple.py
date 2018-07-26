@@ -1108,7 +1108,7 @@ class VectorTuple():
         else:
             m = int(n) / int(2)
             M = n - m
-            return self.power(m).product(self.power(M), op=op)
+            return self.power(m, op=op).product(self.power(M, op=op), op=op)
 
     def map(self, f, codomain=None):
         r"""
@@ -1203,31 +1203,4 @@ def gradedideal(A, U, V, n):
         for j in range(1,i+1):
             A[i] = A[i].concatenate(B[j-1].product(A[i-j]).concatenate(A[i-j].product(B[j-1]))).echelon()
     return A
-
-r"""
-DefaultBase = QQ
-
-n = 6
-QSn = SymmetricGroupAlgebra(QQ, n)
-
-def Epk(pi):
-    return tuple([i for i in range(n) if (i == 0 or pi[i] > pi[i-1]) and (i == n-1 or pi[i] > pi[i+1])])
-
-def epk(pi):
-    return len(Epk(pi))
-
-def E(xs):
-    return QSn.sum(QSn.basis()[pi] for pi in Permutations(n) if Epk(pi) == xs)
-
-def is_lacunar(xs):
-    return all(x+1 not in xs for x in xs)
-
-from itertools import combinations
-
-lacsubs = [xs for k in range(n+1) for xs in combinations(range(n), k) if is_lacunar(xs)]
-
-lacsubs
-
-Epk_span = VectorTuple([E(xs) for xs in lacsubs], ambient=QSn)
-"""
 
