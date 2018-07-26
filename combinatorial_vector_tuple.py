@@ -5,7 +5,10 @@ import operator
 
 class VectorTuple():
     r"""
-    List of vectors in some given module (not necessarily a concrete
+    Vector tuple.
+
+    This is a list of vectors in some given module
+    (not necessarily a concrete
     vector space, but something that implements ``monomial_coefficients``
     like a combinatorial free module does).
     Certain methods, however, will require the ground
@@ -25,14 +28,14 @@ class VectorTuple():
         sage: x,y,z,w = E.gens()
         sage: a = VectorTuple([x, y, z, w], ambient=E)
         sage: a
-        List of vectors [x, y, z, w] in Rational Field-module
+        Vector tuple [x, y, z, w] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
         sage: a.list()
         [x, y, z, w]
         sage: a.dimension()
         4
         sage: a.echelon()
-        List of vectors [w, z, y, x] in Rational Field-module
+        Vector tuple [w, z, y, x] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
         sage: a.coefficients(2*x + 3*y + 7*w)
         [2, 3, 0, 7]
@@ -40,32 +43,32 @@ class VectorTuple():
         sage: a.echelon().coefficients(2*x + 3*y + 7*w)
         [7, 0, 3, 2]
         sage: aa = a.product(a); aa
-        List of vectors
+        Vector tuple
         [0, x^y, x^z, x^w, -x^y, 0, y^z, y^w, -x^z, -y^z, 0, z^w, -x^w, -y^w, -z^w, 0]
         in Rational Field-module The exterior algebra of rank 4 over Rational Field
         sage: aa.echelon()
-        List of vectors [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
+        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
         sage: [a.power(i).dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
-        List of vectors [y^z^w, x^z^w, x^y^w, x^y^z] in Rational Field-module
+        Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
-        sage: aa.contains(x*y - y*x)
+        sage: aa.span_contains(x*y - y*x)
         True
-        sage: aa.contains(x*y - y*x + z)
+        sage: aa.span_contains(x*y - y*x + z)
         False
         sage: aca = a.commutator(a).echelon(); aca
-        List of vectors [2*z^w, 2*y^w, 2*y^z, 2*x^w, 2*x^z, 2*x^y] in
+        Vector tuple [2*z^w, 2*y^w, 2*y^z, 2*x^w, 2*x^z, 2*x^y] in
         Rational Field-module The exterior algebra of rank 4 over Rational Field
-        sage: aa.isbiggerthan(aca)
+        sage: aa.span_contains_as_subset(aca)
         True
-        sage: aca.isbiggerthan(aa)
+        sage: aca.span_contains_as_subset(aa)
         True
-        sage: aa.isequivalentto(aca)
+        sage: aa.span_equals(aca)
         True
         sage: aca.monicized()
-        List of vectors [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
+        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
 
     Now, we do the same over `GF(2)`::
@@ -74,58 +77,158 @@ class VectorTuple():
         sage: x,y,z,w = E.gens()
         sage: a = VectorTuple([x, y, z, w], ambient=E)
         sage: a
-        List of vectors [x, y, z, w] in Finite Field of size 2-module
+        Vector tuple [x, y, z, w] in Finite Field of size 2-module
         The exterior algebra of rank 4 over Finite Field of size 2
         sage: a.list()
         [x, y, z, w]
         sage: a.dimension()
         4
         sage: a.echelon()
-        List of vectors [w, z, y, x] in Finite Field of size 2-module
+        Vector tuple [w, z, y, x] in Finite Field of size 2-module
         The exterior algebra of rank 4 over Finite Field of size 2
         sage: a.coefficients(2*x + 3*y + 7*w)
         [0, 1, 0, 1]
         sage: a.echelon().coefficients(2*x + 3*y + 7*w)
         [1, 0, 1, 0]
         sage: aa = a.product(a); aa
-        List of vectors
+        Vector tuple
         [0, x^y, x^z, x^w, x^y, 0, y^z, y^w, x^z, y^z, 0, z^w, x^w, y^w, z^w, 0]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
         sage: aa.echelon()
-        List of vectors [z^w, y^w, y^z, x^w, x^z, x^y]
+        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
         sage: [a.power(i).dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
-        List of vectors [y^z^w, x^z^w, x^y^w, x^y^z]
+        Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
-        sage: aa.contains(x*y - y*x)
+        sage: aa.span_contains(x*y - y*x)
         True
-        sage: aa.contains(x*y - y*x + z)
+        sage: aa.span_contains(x*y - y*x + z)
         False
         sage: aca = a.commutator(a).echelon(); aca
-        List of vectors []
+        Vector tuple []
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
-        sage: aa.isbiggerthan(aca)
+        sage: aa.span_contains_as_subset(aca)
         True
-        sage: aca.isbiggerthan(aa)
+        sage: aca.span_contains_as_subset(aa)
         False
-        sage: aa.isequivalentto(aca)
+        sage: aa.span_equals(aca)
         False
 
     Echelon form vs. reduced echelon form::
 
         sage: a = VectorTuple([x+y,x,y])
         sage: a.echelon_reduced()
-        List of vectors [y, x]
+        Vector tuple [y, x]
         in Finite Field of size 2-module The exterior algebra of rank 4 over Finite Field of size 2
         sage: a.echelon()
-        List of vectors [x + y, x]
+        Vector tuple [x + y, x]
         in Finite Field of size 2-module The exterior algebra of rank 4 over Finite Field of size 2
+
+    For our next example, we shall work with polynomials.
+    Since ``PolynomialRing`` currently does not yield a
+    ``CombinatorialFreeModule``, we cannot use ``VectorTuple``
+    with elements of the former.
+    Instead, we implement polynomials as elements of the
+    monoid algebra of a free abelian monoid
+    (we set the ``prefix`` and ``bracket`` arguments
+    merely to make the output less clumsy)::
+
+        sage: Mon = FreeAbelianMonoid(["a", "b", "c", "d"])
+        sage: P = Mon.algebra(QQ, prefix="", bracket=False)
+        sage: a, b, c, d = P.gens()
+        sage: a*b + b*a
+        2*F['a']*F['b']
+
+    Apart from the awkward output and the lack of
+    polynomial-specific functionality, this is a perfectly
+    fine implementation of the polynomial ring in four
+    variables `a, b, c, d` over `\QQ`.
+    The order on monomials is the lexicographic order
+    on their sorted representations (i.e., to compare
+    two monomials, we write them as words of the form
+    `aa\ldots a bb\ldots b cc\ldots c dd\ldots d`, and
+    compare these words lexicographically, where
+    `a < b < c < d`). Beware that this is not a monomial
+    order in the sense of commutative algebra! ::
+
+        sage: a < a*a
+        True
+        sage: a*b < a*a*b
+        False
+
+    (See
+    :meth:`~sage.monoids.indexed_free_monoid.IndexedMonoidElement._richcmp_`
+    for the definition of the order.)
+
+    We now define vector tuples and reduce some
+    polynomials modulo them::
+
+        sage: xs = VectorTuple([a*b + b*a, a*c + c*a, a*d + d*a])
+        sage: xs
+        Vector tuple
+        [2*F['a']*F['b'], 2*F['a']*F['c'], 2*F['a']*F['d']]
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: h = (a+b+c+d)**2
+        sage: xs.reduction(h)
+        F['a']^2 + F['b']^2 + 2*F['b']*F['c'] + 2*F['b']*F['d']
+         + F['c']^2 + 2*F['c']*F['d'] + F['d']^2
+        sage: xs.coefficients(a*(b-c))
+        [1/2, -1/2, 0]
+        sage: xs.coefficients(b*c)
+        sage: xs.coefficients(b*c+a*d)
+        sage: xs.coefficients(P.zero())
+        [0, 0, 0]
+        sage: xs.quo_rem(b*c+a*d)
+        ([0, 0, 1/2], F['b']*F['c'])
+
+        sage: xs = VectorTuple([a*b - b*c, b*c - b*d, a*d])
+        sage: xs
+        Vector tuple
+        [F['a']*F['b'] - F['b']*F['c'],
+         F['b']*F['c'] - F['b']*F['d'], F['a']*F['d']]
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: h = (a+b+c+d)**2
+        sage: xs.reduction(h)
+        F['a']^2 + 6*F['a']*F['b'] + 2*F['a']*F['c']
+         + F['b']^2 + F['c']^2 + 2*F['c']*F['d'] + F['d']^2
+
+        sage: xs = VectorTuple([d**2, (c+d)**2, (b+c+d)**2])
+        sage: xs
+        Vector tuple
+        [F['d']^2, F['c']^2 + 2*F['c']*F['d'] + F['d']^2,
+         F['b']^2 + 2*F['b']*F['c'] + 2*F['b']*F['d']
+          + F['c']^2 + 2*F['c']*F['d'] + F['d']^2] 
+        in Rational Field-module Algebra of Free abelian monoid
+        indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: h = (a+b+c+d)**2 + (c-d)**2
+        sage: xs.reduction(h)
+        F['a']^2 + 2*F['a']*F['b'] + 2*F['a']*F['c']
+         + 2*F['a']*F['d'] + 2*F['c']^2
+        sage: xs.quo_rem(b**2 + 2*b*c)
+        ([0, 0, 0], F['b']^2 + 2*F['b']*F['c'])
+        sage: xs.quo_rem(b * (b+2*c+2*d))
+        ([0, -1, 1], 0)
+        sage: xs.quo_rem(b * (b+c+d))
+        ([0, -1/2, 1/2], 1/2*F['b']^2)
+
+    A few other methods::
+
+        sage: xs = VectorTuple([a, a + 2*b, b + 3*c])
+        sage: xs.monicized()
+        Vector tuple
+        [F['a'], 1/2*F['a'] + F['b'], 1/3*F['b'] + F['c']]
+        in Rational Field-module Algebra of Free abelian
+        monoid indexed by {'a', 'b', 'c', 'd'} over Rational Field
+        sage: xs.echelon().monicized().list()
+        [F['c'], F['b'], F['a']]
 
     TODO: Polynomial ring, through free abelian monoid.
     
@@ -135,13 +238,16 @@ class VectorTuple():
     """
     
     def __init__(self, xs, ambient=None):
-        # Create a list of vectors.
-        # Syntax: ``VectorTuple(xs, ambient=M)``, where
-        # ``R`` is the base ring, ``M`` is the module
-        # containing the vectors, and ``xs`` is the list
-        # of the vectors.
-        # If ``ambient`` is not provided, then
-        # ``parent(xs[0])`` is being used as default.
+        r"""
+        Create a vector tuple.
+
+        Syntax: ``VectorTuple(xs, ambient=M)``, where
+        ``R`` is the base ring, ``M`` is the module
+        containing the vectors, and ``xs`` is the list
+        of the vectors.
+        If ``ambient`` is not provided, then
+        ``parent(xs[0])`` is being used as default.
+        """
         self._vectors = xs[:]
         if ambient is None:
             ambient = parent(xs[0])
@@ -151,29 +257,69 @@ class VectorTuple():
         self._ambient = ambient
         return object.__init__(self)
     
-    def __repr__(self):
-        return "List of vectors " + str(self._vectors) + " in " + str(self._basering) + "-module " + str(self._ambient)
+    def __getitem__(self, i):
+        """
+        Return the `i`-th vector `v_i`.
+        """
+        return self._vectors[i]
+
+    def __len__(self):
+        """
+        Return the number `n` of vectors in ``self``.
+        """
+        return len(self._vectors)
+
+    def __iter__(self):
+        """
+        Iterate over the vectors in ``self``.
+        """
+        return iter(self._vectors[:])
+        # Do I need [:] here?
+
+    def ambient(self):
+        """
+        Return the ambient module `M` of ``self``.
+        """
+        return self._ambient
 
     def base_ring(self):
+        r"""
+        Return the base ring `R` of ``self``.
+        """
         return self._basering
     
-    def underlying_module(self):
-        return self._ambient
-    
-    def list(self):
-        return self._vectors[:]
-    
+    def list(self, copy=True):
+        r"""
+        Return the list of vectors in ``self``.
+
+        If ``copy`` is set to ``False``, the original
+        list is returned, otherwise a copy.
+        """
+        if copy:
+            return self._vectors[:]
+        return self._vectors
+
+    def __repr__(self):
+        return "Vector tuple " + str(self._vectors) + " in " + str(self._basering) + "-module " + str(self._ambient)
+
     def show(self):
-        print('List of vectors in module:')
+        print('Vector tuple in module:')
         print self._ambient
         print('over the base ring')
         print self._basering
         print('The vectors are:')
         for i in self._vectors: print i
+
+    def span(self):
+        """
+        Return the span of ``self``, as a
+        :class:`AbstractSubspace`.
+        """
+        raise NotImplementedError # TODO
     
     def reduction_blind(self, v):
         r"""
-        This computes ``self.reduction(v)`` under the assumption
+        Compute ``self.reduction(v)``, under the assumption
         that ``self`` is already in echelon form.
         It is assumed that the module knows division by elements of
         the base ring and equality checking.
@@ -192,7 +338,7 @@ class VectorTuple():
     @cached_method
     def echelon(self, reduced=True, monic=True):
         r"""
-        Return an echelon form of ``self``. This is a list of vectors
+        Return an echelon form of ``self``. This is a vector tuple
         which spans the same submodule as ``self``, but has its
         sequence of highest terms strictly decreasing.
         It is assumed that the module knows division by elements of
@@ -229,7 +375,8 @@ class VectorTuple():
     def echelon2(self):
         r"""
         Different implementation of :meth:`echelon`.
-        Returns the same result (or, rather, the same list of vectors).
+        Returns the same result (or, rather, a vector tuple
+        that represents the same list of vectors).
         """
         R = self._basering
         from bisect import insort
@@ -451,26 +598,55 @@ class VectorTuple():
         return coeffs
 
     def reduction(self, v):
-        # Computes the reduction of a vector v modulo self.
+        r"""
+        Compute the reduction of a vector ``v`` modulo ``self``.
+
+        This is the unique vector ``w`` satisfying
+        `v \equiv w \mod V` that contains none of the
+        leading monomials of the vectors in ``self.echelon()``.
+        """
         return self.echelon().reduction_blind(v)
 
-    def contains_blind(self, v):
-        # Finds out whether a vector v lies in the submodule generated
-        # by self, under the assumption that self is in echelon form
-        # already.
+    def quo_rem(self, v):
+        r"""
+        Given a vector `v \in V`, return a pair
+        `([a_0, a_1, \ldots, a_{n-1}], w)`, where
+        `[a_0, a_1, \ldots, a_{n-1}]` is a list of scalars in
+        `R`, and where `w \in V` is a vector such that
+        `v = a_0 v_0 + a_1 v_1 + \cdots + a_{n-1} v_{n-1} + w`
+        and such that `w` contains none of the leading
+        monomials of the vectors in ``self.echelon()``.
+        Note that `w = 0` if `v` lies in the span of ``self``,
+        and that changing `v` by an element of `V` must leave
+        `w` unchanged.
+        """
+        red = self.reduction(v)
+        return (self.coefficients(v - red), red)
+        # TODO: Optimize! This is doing a lot of unnecessary work.
+
+    def span_contains_blind(self, v):
+        r"""
+        Compute ``self.span_contains(v)``, under the assumption that
+        ``self`` is already in echelon form.
+        """
         return (self.reduction_blind(v) == 0)
 
-    def contains(self, v):
-        # Finds out whether a vector v lies in the submodule generated
-        # by self.
+    def span_contains(self, v):
+        r"""
+        Check whether a vector `v \in V` lies in the span
+        of ``self``.
+        """
         return (self.echelon().reduction_blind(v) == 0)
     
-    def isbiggerthan(self, anotherlist, verbose=False):
-        # Finds out whether the submodule spanned by self contains that
-        # spanned by anotherlist (another list of vectors).
+    def span_contains_as_subset(self, anotherlist, verbose=False):
+        r"""
+        Check whether the span of ``self`` contains the
+        span of a further vector tuple ``anotherlist`` as
+        a subspace.
+        """
         xs = self.echelon()
-        for y in anotherlist.list():
-            if not xs.contains_blind(y):
+        for y in anotherlist.list(copy=False):
+            if not xs.span_contains_blind(y):
                 if verbose == True:
                     print "The offending vector is: "
                     print y
@@ -478,36 +654,42 @@ class VectorTuple():
                 break
         return True
     
-    def issmallerthan(self, anotherlist, verbose=False):
-        # Finds out whether the submodule spanned by self is contained
-        # in that spanned by anotherlist (another list of vectors).
-        return anotherlist.isbiggerthan(self, verbose=verbose)
+    def span_is_contained_in(self, anotherlist, verbose=False):
+        r"""
+        Check whether the span of ``self`` is contained
+        in the span of a further vector tuple ``anotherlist``.
+        """
+        return anotherlist.span_contains_as_subset(self, verbose=verbose)
     
-    def isequivalentto(self, anotherlist, verbose=False):
-        # Finds out whether the submodule spanned by self equals
-        # that spanned by anotherlist (another list of vectors).
-        # (For instance, self.isequivalentto(self.echelon()) should
-        # always return True.)
-        return (anotherlist.isbiggerthan(self, verbose=verbose)
-                and self.isbiggerthan(anotherlist, verbose=verbose))
+    def span_equals(self, anotherlist, verbose=False):
+        r"""
+        Check whether the span of ``self`` equals
+        the span of a further vector tuple ``anotherlist``.
+        """
+        return (anotherlist.span_contains_as_subset(self, verbose=verbose)
+                and self.span_contains_as_subset(anotherlist, verbose=verbose))
     
-    def add(self, anotherlist):
-        # Gives the disjoint union of self with anotherlist (another list
-        # of vectors, which of course should be in the same module).
-        # This union spans the sum of the respective submodules.
+    def concatenate(self, anotherlist):
+        r"""
+        Return the list of vectors obtained by
+        concatenating the vector lists ``self`` and ``anotherlist``.
+
+        This assumes that the vector lists ``self`` and ``anotherlist``
+        have the same base ring and the same ambient
+        module.
+        """
         us = self._vectors[:]
-        us.extend(anotherlist.list())
+        us.extend(anotherlist.list(copy=False))
         return VectorTuple(us, ambient=self._ambient)
     
     def intersection_blind(self, anotherlist):
-        # Gives the intersection of the span of self with the span
-        # of anotherlist (another list of vectors, which of course
-        # should be in the same module), as an echelonized list of
-        # vectors.
-        # This assumes that self and anotherlist are in echelon form
-        # already.
+        r"""
+        Compute ``self.intersection(anotherlist)``, under
+        the assumption that ``self`` and ``anotherlist``
+        are already in echelon form.
+        """
         vs = self._vectors
-        ws = anotherlist.list()
+        ws = anotherlist.list(copy=False)
         M = self._ambient
         n = len(vs)
         vsws = vs + ws
@@ -521,10 +703,16 @@ class VectorTuple():
         return VectorTuple(reslist, ambient=M)
 
     def intersection(self, anotherlist):
-        # Gives the intersection of the span of self with the span
-        # of anotherlist (another list of vectors, which of course
-        # should be in the same module), as an echelonized list of
-        # vectors.
+        r"""
+        Given a further vector tuple ``anotherlist``
+        (whose ambient module is ``self.ambient``),
+        return a vector tuple that spans the intersection
+        of the span of ``self`` with the span of
+        ``anotherlist``.
+
+        This implementation returns an echelonized vector
+        tuple.
+        """
         return self.echelon().intersection_blind(anotherlist.echelon())
 
     def product(self, anotherlist, op=operator.mul):
@@ -541,7 +729,7 @@ class VectorTuple():
         # (in the sense in which, e. g., the product of ideals is
         # defined).
         us = self._vectors
-        vs = anotherlist.list()
+        vs = anotherlist.list(copy=False)
         ws = [op(p, q) for p in us for q in vs]
         return VectorTuple(ws, ambient=self._ambient)
         
@@ -558,7 +746,7 @@ class VectorTuple():
         # If ``op`` is bilinear, then the list returned by this
         # method spans the commutator of the respective submodules.
         us = self._vectors
-        vs = anotherlist.list()
+        vs = anotherlist.list(copy=False)
         ws = [op(p, q) - op(q, p) for p in us for q in vs]
         return VectorTuple(ws, ambient=self._ambient)
         
@@ -621,7 +809,7 @@ def subalgcomp(A, U, n):
     for i in range(n):
         for j in range(1,i+1):
             if i - j < l:
-                A[i] = A[i].add(A[j-1].product(U[i-j])).echelon()
+                A[i] = A[i].concatenate(A[j-1].product(U[i-j])).echelon()
     return A
 
 def gradedideal(A, U, V, n):
@@ -650,7 +838,7 @@ def gradedideal(A, U, V, n):
         A[i] = VectorTuple([], ambient=A)
     for i in range(n):
         for j in range(1,i+1):
-            A[i] = A[i].add(B[j-1].product(A[i-j]).add(A[i-j].product(B[j-1]))).echelon()
+            A[i] = A[i].concatenate(B[j-1].product(A[i-j]).concatenate(A[i-j].product(B[j-1]))).echelon()
     return A
 
 r"""
