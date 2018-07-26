@@ -32,7 +32,7 @@ class VectorTuple():
         The exterior algebra of rank 4 over Rational Field
         sage: a.list()
         [x, y, z, w]
-        sage: a.dimension()
+        sage: a.span_dimension()
         4
         sage: a.echelon()
         Vector tuple [w, z, y, x] in Rational Field-module
@@ -49,7 +49,7 @@ class VectorTuple():
         sage: aa.echelon()
         Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
-        sage: [a.power(i).dimension() for i in range(6)]
+        sage: [a.power(i).span_dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
         Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z] in Rational Field-module
@@ -81,7 +81,7 @@ class VectorTuple():
         The exterior algebra of rank 4 over Finite Field of size 2
         sage: a.list()
         [x, y, z, w]
-        sage: a.dimension()
+        sage: a.span_dimension()
         4
         sage: a.echelon()
         Vector tuple [w, z, y, x] in Finite Field of size 2-module
@@ -99,7 +99,7 @@ class VectorTuple():
         Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
-        sage: [a.power(i).dimension() for i in range(6)]
+        sage: [a.power(i).span_dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
         Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z]
@@ -205,7 +205,7 @@ class VectorTuple():
         Vector tuple
         [F['d']^2, F['c']^2 + 2*F['c']*F['d'] + F['d']^2,
          F['b']^2 + 2*F['b']*F['c'] + 2*F['b']*F['d']
-          + F['c']^2 + 2*F['c']*F['d'] + F['d']^2] 
+          + F['c']^2 + 2*F['c']*F['d'] + F['d']^2]
         in Rational Field-module Algebra of Free abelian monoid
         indexed by {'a', 'b', 'c', 'd'} over Rational Field
         sage: h = (a+b+c+d)**2 + (c-d)**2
@@ -231,12 +231,12 @@ class VectorTuple():
         [F['c'], F['b'], F['a']]
 
     TODO: Polynomial ring, through free abelian monoid.
-    
+
     TODO: Symmetric group algebra.
-    
+
     TODO: Free algebra, e.g., check Dynkin idempotent.
     """
-    
+
     def __init__(self, xs, ambient=None):
         r"""
         Create a vector tuple.
@@ -256,7 +256,7 @@ class VectorTuple():
         self._basering = ambient.base_ring()
         self._ambient = ambient
         return object.__init__(self)
-    
+
     def __getitem__(self, i):
         """
         Return the `i`-th vector `v_i`.
@@ -287,7 +287,7 @@ class VectorTuple():
         Return the base ring `R` of ``self``.
         """
         return self._basering
-    
+
     def list(self, copy=True):
         r"""
         Return the list of vectors in ``self``.
@@ -316,7 +316,7 @@ class VectorTuple():
         :class:`AbstractSubspace`.
         """
         raise NotImplementedError # TODO
-    
+
     def reduction_blind(self, v):
         r"""
         Compute ``self.reduction(v)``, under the assumption
@@ -334,7 +334,7 @@ class VectorTuple():
             if tleader[0] in wcoeffs:
                 w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
         return w
-    
+
     @cached_method
     def echelon(self, reduced=True, monic=True):
         r"""
@@ -507,11 +507,18 @@ class VectorTuple():
     @cached_method
     def syzygies(self):
         r"""
-        Return a dictionary whose items `i: xs` stand for the
-        syzygies of ``self``. More specifically, an item `i: xs` means that
-        the `i`-th vector in ``self`` equals the linear combination
-        of the first `i-1` vectors with coefficients taken from
-        `xs`. (Note that `xs` is a length-`i-1` list.)
+        Return a dictionary `d`, whose keys are some of the
+        numbers `0, 1, \ldots, n-1` (where ``self`` is
+        `(v_0, v_1, \ldots, v_{n-1})`), and with the following
+        properties:
+
+        * If `i` is a key of `d`, then `d[i]` is a length-`i`
+          list `[b_0, b_1, \ldots, b_{i-1}]` of scalars in
+          `R` such that
+          `v_i = b_0 v_0 + b_1 v_1 + \cdots + b_{i-1} v_{i-1}`.
+
+        * If `i` is not a key of `d`, then `v_i` is not in
+          the span of `v_0, v_1, \ldots, v_{i-1}`.
         """
         from itertools import izip
         echeloned = [] # The echeloned variable contains a list of
@@ -563,7 +570,7 @@ class VectorTuple():
         such that
         `v = a_0 v_0 + a_1 v_1 + \cdots + a_{n-1} v_{n-1}`
         if such a list exists; otherwise return ``None``.
-        
+
         This list may not be unique; it is, however, computed
         deterministically from ``self``.
         """
@@ -624,6 +631,54 @@ class VectorTuple():
         return (self.coefficients(v - red), red)
         # TODO: Optimize! This is doing a lot of unnecessary work.
 
+    def echelon_form(self, reduced=True, monic=True):
+        r"""
+        Return an echelon form of ``self``.
+
+        This returns a linearly independent
+        :class:`AbstractVectorList` whose span is the span of
+        ``self`` and which is in echelon form.
+        What exactly "echelon form" means (e.g., which ordering
+        is used) depends on the subclass and the base ring.
+        The result is usually not unique.
+
+        If the parameter ``reduced`` is set to ``True``,
+        then the echelon form is "semireduced", which usually
+        means that a leading term of one of the basis elements
+        cannot appear in any of the other basis elements.
+        If the parameter ``monic`` is set to ``True``, then
+        the leading terms have coefficients `1`.
+        Thus, if both parameters are set to ``True``, then
+        this method returns what is usually called the
+        reduced echelon form.
+        """
+        if reduced:
+            ech = self.echelon_reduced()
+            if monic:
+                return ech.monicized()
+            return ech
+        else:
+            ech = self.echelon()
+            if monic:
+                return ech.monicized()
+            return ech
+
+    def span_canonical_basis(self):    # TODO: move to Subspace.basis
+        r"""
+        Return a canonical basis of the span of ``self``.
+
+        This returns a linearly independent
+        :class:`AbstractVectorList` whose span is the span of
+        ``self``.
+        It is furthermore guaranteed to be canonical in the sense
+        that any other :class:`AbstractVectorList` having the
+        same base ring, ambient module and span will have the
+        same :meth:`span_canonical_basis`, provided that it uses
+        the same subclass (such as :class:`VectorTuple`) as
+        ``self``.
+        """
+        return self.echelon_form(reduced=True, monic=True)
+
     def span_contains_blind(self, v):
         r"""
         Compute ``self.span_contains(v)``, under the assumption that
@@ -637,7 +692,7 @@ class VectorTuple():
         of ``self``.
         """
         return (self.echelon().reduction_blind(v) == 0)
-    
+
     def span_contains_as_subset(self, anotherlist, verbose=False):
         r"""
         Check whether the span of ``self`` contains the
@@ -653,14 +708,14 @@ class VectorTuple():
                 return False
                 break
         return True
-    
+
     def span_is_contained_in(self, anotherlist, verbose=False):
         r"""
         Check whether the span of ``self`` is contained
         in the span of a further vector tuple ``anotherlist``.
         """
         return anotherlist.span_contains_as_subset(self, verbose=verbose)
-    
+
     def span_equals(self, anotherlist, verbose=False):
         r"""
         Check whether the span of ``self`` equals
@@ -668,7 +723,13 @@ class VectorTuple():
         """
         return (anotherlist.span_contains_as_subset(self, verbose=verbose)
                 and self.span_contains_as_subset(anotherlist, verbose=verbose))
-    
+
+    def span_dimension(self):
+        r"""
+        Return the dimension of the span of ``self``.
+        """
+        return len(self.echelon().list())
+
     def concatenate(self, anotherlist):
         r"""
         Return the list of vectors obtained by
@@ -681,10 +742,25 @@ class VectorTuple():
         us = self._vectors[:]
         us.extend(anotherlist.list(copy=False))
         return VectorTuple(us, ambient=self._ambient)
-    
-    def intersection_blind(self, anotherlist):
+
+    def zip(self, ws, op=operator.add, ambient=None):
         r"""
-        Compute ``self.intersection(anotherlist)``, under
+        Return the list of vectors
+        `(op(x_0, y_0), op(x_1, y_1), \ldots, op(x_{n-1}, y_{n-1}))`,
+        where `(x_0, x_1, \ldots, x_{n-1})` is the given
+        vector list ``self``, and where
+        `(y_0, y_1, \ldots, y_{n-1})` is a second vector
+        list ``ws``, and where ``op`` is a binary
+        operator, and where ``ambient`` is an `R`-module
+        which contains the values of ``op``.
+        (The default value of ``op`` is addition, and the
+        default value of ``ambient`` is ``self.ambient()``.)
+        """
+        raise NotImplementedError # TODO
+
+    def span_intersection_blind(self, anotherlist):
+        r"""
+        Compute ``self.span_intersection(anotherlist)``, under
         the assumption that ``self`` and ``anotherlist``
         are already in echelon form.
         """
@@ -702,7 +778,7 @@ class VectorTuple():
             reslist.append(ws[k2] - M.sum(syz2[i] * ws[i] for i in range(k2)))
         return VectorTuple(reslist, ambient=M)
 
-    def intersection(self, anotherlist):
+    def span_intersection(self, anotherlist):
         r"""
         Given a further vector tuple ``anotherlist``
         (whose ambient module is ``self.ambient``),
@@ -713,26 +789,32 @@ class VectorTuple():
         This implementation returns an echelonized vector
         tuple.
         """
-        return self.echelon().intersection_blind(anotherlist.echelon())
+        return self.echelon().span_intersection_blind(anotherlist.echelon())
 
-    def product(self, anotherlist, op=operator.mul):
-        # Gives the list formed by pairwise products of vectors in
-        # ``self`` with vectors in ``anotherlist``.
-        # Here, ``op`` is required to be a binary operation from
-        # `M \times M` to `M`, where `M` is the underlying module
-        # of ``self``. "Product" is understood to mean "image under
-        # ``op``".
-        # (By default, ``op`` is standard multiplication, which
-        # assumes that `M` is an algebra.)
-        # If ``op`` is bilinear, then the list returned by this
-        # method spans the product of the respective submodules
-        # (in the sense in which, e. g., the product of ideals is
-        # defined).
+    def product(self, anotherlist, op=operator.mul, ambient=None):
+        r"""
+        Return the list of vectors
+        `(op(x_0, y_0), op(x_0, y_1), \ldots, op(x_{n-1}, y_{m-1}))`
+        (that is, the `nm` vectors `op(x_i, y_j)`,
+        lexicographically ordered)
+        where `(x_0, x_1, \ldots, x_{n-1})` is the given
+        vector list ``self``, and where
+        `(y_0, y_1, \ldots, y_{m-1})` is a second vector
+        list ``anotherlist``, and where ``op`` is a binary
+        operator, and where ``ambient`` is an `R`-module
+        which contains the values of ``op``.
+        (The default value of ``op`` is multiplication, and
+        the default value of ``ambient`` is ``self.ambient``;
+        these values make sense when ``self.ambient`` is an
+        algebra.)
+        """
         us = self._vectors
         vs = anotherlist.list(copy=False)
         ws = [op(p, q) for p in us for q in vs]
-        return VectorTuple(ws, ambient=self._ambient)
-        
+        if ambient is None:
+            ambient = self._ambient
+        return VectorTuple(ws, ambient=ambient)
+
     def commutator(self, anotherlist, op=operator.mul):
         # Gives the list formed by pairwise commutators of vectors in
         # ``self`` with vectors in ``anotherlist``.
@@ -749,7 +831,7 @@ class VectorTuple():
         vs = anotherlist.list(copy=False)
         ws = [op(p, q) - op(q, p) for p in us for q in vs]
         return VectorTuple(ws, ambient=self._ambient)
-        
+
     def power(self, n):
         # Returns the n-th power of the list with respect to the
         # above-defined product function.
@@ -762,21 +844,32 @@ class VectorTuple():
             m = int(n) / int(2)
             M = n - m
             return self.power(m).product(self.power(M))
-    
-    def dimension(self):
-        # Gives the dimension of the submodule generated by self.
-        return len(self.echelon().list())
-    
-    def image(self, f):
-        # Returns the list of the images of the vectors under a morphism f.
-        # The module in which they lie is the codomain of f.
-        ys = [f(x) for x in self._vectors]
-        return VectorTuple(ys, ambient=f.codomain())
 
-    def kernel(self, f):
-        # Returns a basis of the kernel of a morphism f (restricted
-        # to the span of self).
-        img = self.image(f)
+    def map(self, f, codomain=None):
+        r"""
+        Return the vector list obtained from ``self``
+        by applying a given map `f` to each vector.
+        The ambient space of the new list can be provided
+        using the ``codomain`` argument (default:
+        ``f.codomain()``, which is defined if ``f`` is
+        a morphism).
+        """
+        if codomain is None:
+            codomain = f.codomain()
+        ys = [f(x) for x in self._vectors]
+        return VectorTuple(ys, ambient=codomain)
+
+    def kernel_of_morphism(self, f): # TODO: move to Subspace.kernel_of_morphism
+        r"""
+        Return a vector list that spans the kernel of
+        a linear map ``f`` restricted to ``self``.
+
+        If ``f`` is a linear map from ``self.ambient``
+        to another `R`-module, then this method returns
+        a vector list whose span is the intersection
+        of ``self.span()`` with `\Ker f`.
+        """
+        img = self.map(f)
         syzzies = img.syzygies()
         vects = self._vectors
         M = self._ambient
