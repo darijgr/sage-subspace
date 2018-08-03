@@ -7,15 +7,18 @@ class VectorTuple():
     r"""
     Vector tuple.
 
-    This is a list of vectors in some given module
-    (not necessarily a concrete vector space, but something
-    whose elements implement ``monomial_coefficients``
-    like a combinatorial free module does, and which implements
-    ``sum`` and has a reasonable ``0`` comparison,
-    and whose index set is totally ordered).
-    Certain methods, however, will require the ground
-    ring to be a field, or at least certain elements of it to be
-    invertible.
+    This is a finite list of vectors in some `R`-module,
+    where `R` is a commutative ring.
+    (The `R`-module is assumed to be a
+    :class:`CombinatorialFreeModule`, or more generally
+    to be a parent that implements ``sum`` and has a
+    reasonable ``0`` comparison, and whose elements
+    implement ``monomial_coefficients`` like a
+    combinatorial free module does, and such that the
+    monomials returned by this method are totally
+    ordered).
+    Some methods require the ground ring to be a field,
+    or at least certain elements of it to be invertible.
 
     This probably implements some functionality from
     https://trac.sagemath.org/ticket/11111 , but it does so
@@ -489,7 +492,8 @@ class VectorTuple():
         ``M`` is the module containing the vectors, and
         ``xs`` is the list of the vectors.
         If ``ambient`` is not provided, then
-        ``parent(xs[0])`` is being used as default.
+        ``parent(xs[0])`` is being used as default
+        (as long as ``xs`` is nonempty).
 
         EXAMPLES::
 
@@ -517,7 +521,7 @@ class VectorTuple():
 
     def __getitem__(self, i):
         """
-        Return the `i`-th vector `v_i`.
+        Return the `i`-th vector `v_i` of the tuple.
 
         EXAMPLES::
 
@@ -648,19 +652,40 @@ class VectorTuple():
                 " in " + str(self._basering) + \
                 "-module " + str(self._ambient)
 
+    @cached_method
     def span(self):
         """
         Return the span of ``self``, as a
         :class:`VectorSpan`.
+
+        EXAMPLES::
+
+            sage: C = CombinatorialFreeModule(Zmod(18), ["x", "y", "z"])
+            sage: x, y, z = C.gens()
+            sage: vs = VectorTuple([x, x+y, y])
+            sage: vs.span()
+            Span of the vector tuple [B['x'], B['x'] + B['y'], B['y']]
+            in Ring of integers modulo 18-module Free module generated
+            by {'x', 'y', 'z'} over Ring of integers modulo 18
         """
-        raise NotImplementedError # TODO
+        return VectorSpan(self)
 
     def reduction_blind(self, v):
         r"""
         Compute ``self.reduction(v)``, under the assumption
         that ``self`` is already in echelon form.
-        It is assumed that the module knows division by elements of
-        the base ring and equality checking.
+        It is assumed that the module knows division by elements
+        of the base ring and equality checking.
+
+        EXAMPLES::
+
+            sage: C = CombinatorialFreeModule(ZZ, ["a", "b", "c"])
+            sage: a, b, c = C.gens()
+            sage: vs = VectorTuple([c+3*b+2*a, a])
+            sage: vs.reduction_blind(c)
+            -3*B['b']
+            sage: vs.reduction_blind(2*c+2*b+4*a)
+            -4*B['b']
         """
         R = self._basering
         w = v
@@ -670,7 +695,8 @@ class VectorTuple():
             wcoeffs = w.monomial_coefficients()
             tleader = max(t.monomial_coefficients().items())
             if tleader[0] in wcoeffs:
-                w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
+                precoeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
+                w = w - precoeff * t
         return w
 
     @cached_method
@@ -679,8 +705,46 @@ class VectorTuple():
         Return an echelon form of ``self``. This is a vector tuple
         which spans the same submodule as ``self``, but has its
         sequence of highest terms strictly decreasing.
-        It is assumed that the module knows division by elements of
-        the base ring and equality checking.
+
+        It is assumed that the base ring supports division (at
+        least in those cases that come up in the computation).
+
+        The echelon form returned by this method is neither
+        reduced nor monic. See :meth:`echelon_reduced` and
+        :meth:`monicized` for how to get the latter.
+
+        EXAMPLES::
+
+            sage: C = CombinatorialFreeModule(QQ, ["a", "b", "c", "d"])
+            sage: a, b, c, d = C.gens()
+            sage: vs = VectorTuple([a+2*b+3*c, b+2*c+3*d, c+2*d])
+            sage: vs.echelon()
+            Vector tuple
+            [-2/3*B['a'] - 1/3*B['b'] + 3*B['d'],
+             B['a'] + 2*B['b'] + 3*B['c'],
+             1/9*B['a'] - 4/9*B['b']]
+            in Rational Field-module Free module generated
+            by {'a', 'b', 'c', 'd'} over Rational Field
+
+        When the base ring `R` is not a field, the computation
+        sometimes will work and sometimes won't, depending on
+        the denominators being invertible::
+
+            sage: C = CombinatorialFreeModule(ZZ, ["a", "b", "c"])
+            sage: a, b, c = C.gens()
+            sage: vs = VectorTuple([a, a+b])
+            sage: vs.echelon()
+            Vector tuple [B['b'], B['a']] in Integer Ring-module
+            Free module generated by {'a', 'b', 'c'} over Integer Ring
+            sage: vs = VectorTuple([2*a, b+2*a])
+            sage: vs.echelon()
+            Vector tuple [B['b'], 2*B['a']] in Integer Ring-module
+            Free module generated by {'a', 'b', 'c'} over Integer Ring
+            sage: vs = VectorTuple([2*a, a+b])
+            sage: vs.echelon() # this would have to divide 1 by 2
+            Traceback (most recent call last):
+            ...
+            TypeError: no conversion of this rational to integer
         """
         R = self._basering
         echeloned = [] # The echeloned variable contains a list of
@@ -694,7 +758,8 @@ class VectorTuple():
                 wcoeffs = w.monomial_coefficients()
                 tleader = max(t.monomial_coefficients().items())
                 if tleader[0] in wcoeffs:
-                    w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
+                    precoeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
+                    w = w - precoeff * t
             # Now w is the reduction of v modulo echelon.
             # If w == 0, then v was linearly dependent on echelon,
             #      and we don't have to do anything.
@@ -715,6 +780,7 @@ class VectorTuple():
         Different implementation of :meth:`echelon`.
         Returns the same result (or, rather, a vector tuple
         that represents the same list of vectors).
+        Not cached!
         """
         R = self._basering
         from bisect import insort
@@ -740,7 +806,8 @@ class VectorTuple():
                 wcoeffs = w.monomial_coefficients()
                 if i in wcoeffs:
                     tleader = t.monomial_coefficients()[i]
-                    w = w - R(wcoeffs[i]) / R(tleader) * t
+                    precoeff = R( R(wcoeffs[i]) / R(tleader) )
+                    w = w - precoeff * t
             # Now w is the reduction of v modulo the span of the
             # v's in echeloned.
             # If w == 0, then v was linearly dependent on the v's in
@@ -773,7 +840,8 @@ class VectorTuple():
                 wcoeffs = w.monomial_coefficients()
                 tleader = max(t.monomial_coefficients().items())
                 if tleader[0] in wcoeffs:
-                    w = w - R(wcoeffs[tleader[0]]) / R(tleader[1]) * t
+                    precoeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
+                    w = w - precoeff * t
             ech[i] = w
         res = VectorTuple(ech, ambient=self._ambient)
         res.echelon.set_cache(res)
@@ -824,7 +892,7 @@ class VectorTuple():
                 wcoeffs = w.monomial_coefficients()
                 tleader = max(t.monomial_coefficients().items())
                 if tleader[0] in wcoeffs:
-                    coeff = R(wcoeffs[tleader[0]]) / R(tleader[1])
+                    coeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
                     w = w - coeff * t
                     # Subtract coeff * hs from the vector whs:
                     whs = [whs_i - coeff * hs_i
@@ -881,7 +949,7 @@ class VectorTuple():
                 wcoeffs = w.monomial_coefficients()
                 tleader = max(t.monomial_coefficients().items())
                 if tleader[0] in wcoeffs:
-                    coeff = R(wcoeffs[tleader[0]]) / R(tleader[1])
+                    coeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
                     w = w - coeff * t
                     # Subtract coeff * hs from the vector whs:
                     whs = [whs_i - coeff * hs_i
@@ -937,7 +1005,7 @@ class VectorTuple():
             wcoeffs = w.monomial_coefficients()
             tleader = max(t.monomial_coefficients().items())
             if tleader[0] in wcoeffs:
-                coeff = R(wcoeffs[tleader[0]]) / R(tleader[1])
+                coeff = R( R(wcoeffs[tleader[0]]) / R(tleader[1]) )
                 w = w - coeff * t
                 coeffs[i] = coeff
         return coeffs
@@ -1252,7 +1320,7 @@ class VectorSpan():
     The latter tuple can be accessed by the
     :meth:`vector_tuple` method.
     """
-    def __init__(self, xs, ambient=None):
+    def __init__(self, xs, ambient=None, echelon=False, reduced=False, monic=False):
         r"""
         Create a vector span.
 
@@ -1268,10 +1336,25 @@ class VectorSpan():
         If ``ambient`` is not provided and ``xs`` is not
         a vector tuple, then ``parent(xs[0])`` is being
         used as default.
+
+        The optional boolean variable ``echelon`` can be
+        set to ``True`` to signify that the vector tuple
+        is in echelon form.
+        The optional boolean variable ``reduced`` can be
+        set to ``True`` to signify that the vector tuple
+        is in *reduced* echelon form (assuming that
+        ``echelon`` is also set to ``True``).
+        The optional boolean variable ``monic`` can be
+        set to ``True`` to signify that the vector tuple
+        is monic (i.e., each nonzero vector has leading
+        coefficient `1`).
         """
         if not isinstance(xs, VectorTuple):
             xs = VectorTuple(xs, ambient=ambient)
         self._vt = xs
+        self._echelon = echelon
+        self._reduced = reduced
+        self._monic = monic
         return object.__init__(self)
 
     def ambient(self):
