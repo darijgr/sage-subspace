@@ -1108,9 +1108,9 @@ class VectorTuple():
         xs = self.echelon()
         for y in anotherlist.list(copy=False):
             if not xs.span_contains_blind(y):
-                if verbose == True:
-                    print "The offending vector is: "
-                    print y
+                if verbose:
+                    print("The offending vector is: ")
+                    print(y)
                 return False
                 break
         return True
