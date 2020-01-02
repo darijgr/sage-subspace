@@ -870,7 +870,6 @@ class VectorTuple():
         The matrix is returned as a list of lists (the inner lists
         being its rows).
         """
-        from itertools import izip
         echeloned = [] # The echeloned variable contains a list of
                        # pairs (v, hs). The v components are vectors
                        # already brought into echelon form. The hs
@@ -896,7 +895,7 @@ class VectorTuple():
                     w = w - coeff * t
                     # Subtract coeff * hs from the vector whs:
                     whs = [whs_i - coeff * hs_i
-                           for (whs_i, hs_i) in izip(whs, hs)]
+                           for (whs_i, hs_i) in zip(whs, hs)]
             # Now w is the reduction of v modulo echelon.
             # If w == 0, then v was linearly dependent on echelon,
             #      and we don't have to do anything.
@@ -926,7 +925,6 @@ class VectorTuple():
         * If `i` is not a key of `d`, then `v_i` is not in
           the span of `v_0, v_1, \ldots, v_{i-1}`.
         """
-        from itertools import izip
         echeloned = [] # The echeloned variable contains a list of
                        # pairs (v, hs). The v components are vectors
                        # already brought into echelon form. The hs
@@ -953,7 +951,7 @@ class VectorTuple():
                     w = w - coeff * t
                     # Subtract coeff * hs from the vector whs:
                     whs = [whs_i - coeff * hs_i
-                           for (whs_i, hs_i) in izip(whs, hs)]
+                           for (whs_i, hs_i) in zip(whs, hs)]
             # Now w is the reduction of v modulo echelon.
             # If w == 0, then v was linearly dependent on echelon,
             #      and we record a syzygy.
@@ -1182,7 +1180,7 @@ class VectorTuple():
         vsws = vs + ws
         syzzies = VectorTuple(vsws, ambient=M).syzygies()
         reslist = []
-        for (k, syz) in syzzies.iteritems():
+        for (k, syz) in syzzies.items():
             # Throw the vs-part of syz away.
             k2 = k - n
             syz2 = syz[n:]
@@ -1307,7 +1305,7 @@ class VectorTuple():
         vects = self._vectors
         M = self._ambient
         ker = []
-        for i, xs in syzzies.iteritems():
+        for i, xs in syzzies.items():
             ker.append(vects[i] - M.sum((c * vects[j] for (j, c) in enumerate(xs))))
         return VectorTuple(ker, ambient=M)
 
