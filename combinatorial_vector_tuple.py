@@ -1,4 +1,4 @@
-# %attach /cygdrive/d/math/TEMPrepth/sage-subspace/combinatorial_vector_tuple.py
+# attach("/cygdrive/d/math/TEMPrepth/sage-subspace/combinatorial_vector_tuple.py")
 
 from sage.misc.cachefunc import cached_method
 import operator
@@ -49,22 +49,22 @@ class VectorTuple():
         [7, 0, 3, 2]
         sage: aa = a.product(a); aa
         Vector tuple
-        [0, x^y, x^z, x^w, -x^y, 0, y^z, y^w, -x^z, -y^z, 0, z^w, -x^w, -y^w, -z^w, 0]
+        [0, x*y, x*z, x*w, -x*y, 0, y*z, y*w, -x*z, -y*z, 0, z*w, -x*w, -y*w, -z*w, 0]
         in Rational Field-module The exterior algebra of rank 4 over Rational Field
         sage: aa.echelon()
-        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
+        Vector tuple [z*w, y*w, y*z, x*w, x*z, x*y] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
         sage: [a.power(i).span_dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
-        Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z] in Rational Field-module
+        Vector tuple [y*z*w, x*z*w, x*y*w, x*y*z] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
         sage: aa.span_contains(x*y - y*x)
         True
         sage: aa.span_contains(x*y - y*x + z)
         False
         sage: aca = a.commutator(a).echelon(); aca
-        Vector tuple [2*z^w, 2*y^w, 2*y^z, 2*x^w, 2*x^z, 2*x^y] in
+        Vector tuple [2*z*w, 2*y*w, 2*y*z, 2*x*w, 2*x*z, 2*x*y] in
         Rational Field-module The exterior algebra of rank 4 over Rational Field
         sage: aa.span_contains_as_subset(aca)
         True
@@ -73,7 +73,7 @@ class VectorTuple():
         sage: aa.span_equals(aca)
         True
         sage: aca.monicized()
-        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y] in Rational Field-module
+        Vector tuple [z*w, y*w, y*z, x*w, x*z, x*y] in Rational Field-module
         The exterior algebra of rank 4 over Rational Field
 
     Now, we do the same over `GF(2)`::
@@ -97,17 +97,17 @@ class VectorTuple():
         [1, 0, 1, 0]
         sage: aa = a.product(a); aa
         Vector tuple
-        [0, x^y, x^z, x^w, x^y, 0, y^z, y^w, x^z, y^z, 0, z^w, x^w, y^w, z^w, 0]
+        [0, x*y, x*z, x*w, x*y, 0, y*z, y*w, x*z, y*z, 0, z*w, x*w, y*w, z*w, 0]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
         sage: aa.echelon()
-        Vector tuple [z^w, y^w, y^z, x^w, x^z, x^y]
+        Vector tuple [z*w, y*w, y*z, x*w, x*z, x*y]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
         sage: [a.power(i).span_dimension() for i in range(6)]
         [1, 4, 6, 4, 1, 0]
         sage: a.power(3).echelon()
-        Vector tuple [y^z^w, x^z^w, x^y^w, x^y^z]
+        Vector tuple [y*z*w, x*z*w, x*y*w, x*y*z]
         in Finite Field of size 2-module The exterior algebra of rank 4
         over Finite Field of size 2
         sage: aa.span_contains(x*y - y*x)
@@ -1267,7 +1267,7 @@ class VectorTuple():
         elif n == 1:
             return self
         else:
-            m = int(n) / int(2)
+            m = int(n) // int(2)
             M = n - m
             return self.power(m, op=op).product(self.power(M, op=op), op=op)
 
