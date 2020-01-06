@@ -26,7 +26,7 @@ class VectorTuple():
 
     EXAMPLES:
 
-    Let us consider some lists of vectors in the exterior algebra
+    Let us consider some vector tuples in the exterior algebra
     of a vector space::
 
         sage: E = ExteriorAlgebra(QQ, ["x","y","z","w"])
@@ -850,7 +850,7 @@ class VectorTuple():
 
     def monicized(self):
         r"""
-        Return the vector list obtained from ``self`` by
+        Return the vector tuple obtained from ``self`` by
         dividing each nonzero vector in ``self`` by its leading
         coefficient.
         """
@@ -1136,25 +1136,24 @@ class VectorTuple():
 
     def concatenate(self, anotherlist):
         r"""
-        Return the list of vectors obtained by
-        concatenating the vector lists ``self`` and ``anotherlist``.
+        Return the vector tuple obtained by
+        concatenating the vector tuples ``self`` and ``anotherlist``.
 
-        This assumes that the vector lists ``self`` and ``anotherlist``
+        This assumes that the vector tuples ``self`` and ``anotherlist``
         have the same base ring and the same ambient
         module.
         """
-        us = self._vectors[:]
-        us.extend(anotherlist.list(copy=False))
+        us = self._vectors + anotherlist.list(copy=False)
         return VectorTuple(us, ambient=self._ambient)
 
     def zip(self, ws, op=operator.add, ambient=None):
         r"""
-        Return the list of vectors
+        Return the vector tuple
         `(op(x_0, y_0), op(x_1, y_1), \ldots, op(x_{n-1}, y_{n-1}))`,
         where `(x_0, x_1, \ldots, x_{n-1})` is the given
-        vector list ``self``, and where
+        vector tuple ``self``, and where
         `(y_0, y_1, \ldots, y_{n-1})` is a second vector
-        list ``ws``, and where ``op`` is a binary
+        tuple ``ws``, and where ``op`` is a binary
         operator, and where ``ambient`` is an `R`-module
         which contains the values of ``op``.
         (The default value of ``op`` is addition, and the
@@ -1202,14 +1201,14 @@ class VectorTuple():
 
     def product(self, anotherlist, op=operator.mul, ambient=None):
         r"""
-        Return the vectors tuple
+        Return the vector tuple
         `(op(x_0, y_0), op(x_0, y_1), \ldots, op(x_{n-1}, y_{m-1}))`
         (that is, the `nm` vectors `op(x_i, y_j)`,
         lexicographically ordered)
         where `(x_0, x_1, \ldots, x_{n-1})` is the given
-        vector list ``self``, and where
+        vector tuple ``self``, and where
         `(y_0, y_1, \ldots, y_{m-1})` is a second vector
-        list ``anotherlist``, and where ``op`` is a binary
+        tuple ``anotherlist``, and where ``op`` is a binary
         operator, and where ``ambient`` is an `R`-module
         which contains the values of ``op``.
         (The default value of ``op`` is multiplication, and
@@ -1234,9 +1233,9 @@ class VectorTuple():
         (that is, the `nm` vectors `op(x_i, y_j) - op(y_j, x_i)`,
         lexicographically ordered)
         where `(x_0, x_1, \ldots, x_{n-1})` is the given
-        vector list ``self``, and where
+        vector tuple ``self``, and where
         `(y_0, y_1, \ldots, y_{m-1})` is a second vector
-        list ``anotherlist``, and where ``op`` is a binary
+        tuple ``anotherlist``, and where ``op`` is a binary
         operator, and where ``ambient`` is an `R`-module
         which contains the values of ``op``.
         (The default value of ``op`` is multiplication, and
@@ -1273,9 +1272,9 @@ class VectorTuple():
 
     def map(self, f, codomain=None):
         r"""
-        Return the vector list obtained from ``self``
+        Return the vector tuple obtained from ``self``
         by applying a given map `f` to each vector.
-        The ambient space of the new list can be provided
+        The ambient space of the new tuple can be provided
         using the ``codomain`` argument (default:
         ``f.codomain()``, which is defined if ``f`` is
         a morphism).
@@ -1287,12 +1286,12 @@ class VectorTuple():
 
     def kernel_of_morphism(self, f, codomain=None): # TODO: move to Subspace.kernel_of_morphism
         r"""
-        Return a vector list that spans the kernel of
+        Return a vector tuple that spans the kernel of
         a linear map ``f`` restricted to ``self``.
 
         If ``f`` is a linear map from ``self.ambient``
         to another `R`-module, then this method returns
-        a vector list whose span is the intersection
+        a vector tuple whose span is the intersection
         of ``self.span()`` with `\Ker f`.
 
         The codomain of ``f`` needs to be provided as
@@ -1402,11 +1401,11 @@ r"""
 def subalgcomp(A, U, n):
     # INPUT:
     # A: a graded algebra over a base ring.
-    # U: a list of listsofvectors, where each vector in U[i] lies in the
+    # U: a list of vector tuples, where each vector in U[i] lies in the
     # (i+1)-th graded component of A.
     # n: an integer.
     # OUTPUT:
-    # a list of listsofvectors, the i-th of which spans the (i+1)-th
+    # a list of vector tuples, the i-th of which spans the (i+1)-th
     # graded component of the subalgebra of A generated by U. The list
     # has length n.
     # (As should be clear from the above description, generators in the
@@ -1429,13 +1428,13 @@ def subalgcomp(A, U, n):
 def gradedideal(A, U, V, n):
     # INPUT:
     # A: a graded algebra over a base ring.
-    # U: a list of listsofvectors, where each vector in U[i] lies in the
+    # U: a list of vector tuples, where each vector in U[i] lies in the
     # (i+1)-th graded component of A.
-    # V: a list of listsofvectors, where each vector in V[i] lies in the
+    # V: a list of vector tuples, where each vector in V[i] lies in the
     # vector subspace of A generated by U[i].
     # n: an integer.
     # OUTPUT:
-    # a list of listsofvectors, the i-th of which spans the (i+1)-th
+    # a list of vector tuples, the i-th of which spans the (i+1)-th
     # graded component of the two-sided ideal generated by V inside the
     # subalgebra of A generated by U. The list has length n.
     # (As should be clear from the above description, generators in the
