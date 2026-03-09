@@ -1412,7 +1412,37 @@ class VectorSpan():
                 "-module " + str(self._vt._ambient)
 
 
+def span_up_to_first_repeat(xss, ambient=None, echelon=False):
+    r"""
+    Given a (possibly infinite) iterable ``xss`` of lists
+    (or tuples) of vectors (called "sublists"),
+    construct the :class:`VectorTuple` that consists
+    of the vectors in the first `k` sublists of
+    ``xss``, where `k` is the smallest integer such
+    that all vectors in the `(k+1)`-th sublist
+    belong to the span of all vectors in the `k`-th
+    sublist.
 
+    If no such `k` exists, this will not terminate.
+
+    This is useful, e.g., in computing a
+    subalgebra with a given set of generators.
+    """
+    if ambient is None:
+        from sage.structure.element import parent
+        ambient = parent(xss[0][0])
+    veclist = []
+    current_span = VectorTuple(veclist, ambient=ambient)
+    for xs in xss:
+        veclist_new = veclist + list(xs)
+        new_span = VectorTuple(current_span.list() + veclist_new,
+                               ambient=ambient)
+        if echelon:
+            new_span = new_span.echelon_reduced()
+        if new_span.span_dimension() == current_span.span_dimension():
+            return new_span
+        current_span = new_span
+    return current_span
 
 r"""
 # Various personal methods that are low priority.
